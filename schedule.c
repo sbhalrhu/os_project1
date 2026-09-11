@@ -175,6 +175,20 @@ int main(int argc, char *argv[]) {
      * The quantum is common among all processes.
      */
 
+
+    /* TO BE ABLE to run two.c as two not ./two, we need to modify the directory and path environments.
+     * 
+    */
+    char *old_path = getenv("PATH");
+    if (old_path) {
+        char *new_path = malloc(strlen(old_path) + 3); 
+        sprintf(new_path, ".:%s", old_path);
+        setenv("PATH", new_path, 1);
+        free(new_path);
+    } else {
+        setenv("PATH", ".", 1);
+    }
+
     int quantum = atoi(argv[1]);
     int current_arg = 2;
 
