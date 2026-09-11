@@ -149,15 +149,16 @@ void fork_children(void) {
             sigprocmask(SIG_SETMASK, &old_mask, NULL);
             raise(SIGSTOP);
 
-            /* Build exec path: if name has no '/', add "./" to find it in the current directory (e.g. "two" -> "./two").
-             * If that fails, execvp falls through to perror+exit. */
+            /* Build exec path: if name has no '/', check if "./name" exists
+             * in the current directory first. If yes, use it. If not (e.g.
+             * it's a system command like ls), fall back to plain name so
+             * execvp searches PATH normally. */
             char *exec_name = processes[i]->name;
             char local_path[256];
             if (strchr(exec_name, '/') == NULL) {
                 snprintf(local_path, sizeof(local_path), "./%s", exec_name);
-                if (access(local_path, X_OK) == 0)
-                {
-                    exec_name = local_path;
+                if (access(local_path, X_OK) == 0) {
+                    exec_name = local_path;  /* found in current dir, use ./ */
                 }
             }
             execvp(exec_name, processes[i]->args);
