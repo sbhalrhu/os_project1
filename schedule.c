@@ -148,6 +148,16 @@ void fork_children(void) {
         if (pid == 0) {
             sigprocmask(SIG_SETMASK, &old_mask, NULL);
             raise(SIGSTOP);
+
+            if (strchr(processes[i]->name, '/') == NULL) {
+                char local_path[256];
+                snprintf(local_path, sizeof(local_path), "./%s", processes[i]->name);
+                execvp(local_path, processes[i]->args);
+            } else {
+                execvp(processes[i]->name, processes[i]->args);
+            }
+
+
             execvp(processes[i]->name, processes[i]->args);
             perror(processes[i]->name);
             exit(EXIT_FAILURE);
@@ -176,18 +186,7 @@ int main(int argc, char *argv[]) {
      */
 
 
-    /* TO BE ABLE to run two.c as two not ./two, we need to modify the directory and path environments.
-     * 
-    */
-    char *old_path = getenv("PATH");
-    if (old_path) {
-        char *new_path = malloc(strlen(old_path) + 3); 
-        sprintf(new_path, ".:%s", old_path);
-        setenv("PATH", new_path, 1);
-        free(new_path);
-    } else {
-        setenv("PATH", ".", 1);
-    }
+
 
     int quantum = atoi(argv[1]);
     int current_arg = 2;
