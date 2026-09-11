@@ -155,7 +155,10 @@ void fork_children(void) {
             char local_path[256];
             if (strchr(exec_name, '/') == NULL) {
                 snprintf(local_path, sizeof(local_path), "./%s", exec_name);
-                exec_name = local_path;
+                if (access(local_path, X_OK) == 0)
+                {
+                    exec_name = local_path;
+                }
             }
             execvp(exec_name, processes[i]->args);
             /* execvp only returns on failure */
