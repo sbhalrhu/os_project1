@@ -104,7 +104,7 @@ void reap_children(process *processes[], int num_processes) {
     pid_t pid;
     int status; 
 
-    while (pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) {
+    while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) {
         if (pid <= 0) { break;}
         for (int i = 0; i < num_processes; i++) {
             if (processes[i]->pid != pid) { continue; }
