@@ -142,30 +142,30 @@ void fork_children(void) {
     sigaddset(&block_child, SIGCHLD);
     sigprocmask(SIG_BLOCK, &block_child, &old_mask);
 
-
     for (int i = 0; i < num_processes; i++) {
         pid_t pid = fork();
         if (pid == 0) {
+            /* Child: restore mask, stop self, then exec when resumed */
             sigprocmask(SIG_SETMASK, &old_mask, NULL);
             raise(SIGSTOP);
 
-            if (strchr(processes[i]->name, '/') == NULL) {
-                char local_path[256];
-                snprintf(local_path, sizeof(local_path), "./%s", processes[i]->name);
-                execvp(local_path, processes[i]->args);
-            } else {
-                execvp(processes[i]->name, processes[i]->args);
+            /* Build exec path: if name has no '/', add "./" to find it in the current directory (e.g. "two" -> "./two").
+             * If that fails, execvp falls through to perror+exit. */
+            char *exec_name = processes[i]->name;
+            char local_path[256];
+            if (strchr(exec_name, '/') == NULL) {
+                snprintf(local_path, sizeof(local_path), "./%s", exec_name);
+                exec_name = local_path;
             }
-
-
-            execvp(processes[i]->name, processes[i]->args);
+            execvp(exec_name, processes[i]->args);
+            /* execvp only returns on failure */
             perror(processes[i]->name);
             exit(EXIT_FAILURE);
         } else if (pid < 0) {
             perror("fork failed");
             exit(EXIT_FAILURE);
-        }
-        else {
+        } else {
+            /* Parent: record pid and wait for child to stop */
             processes[i]->pid = pid;
             int exit_status;
             waitpid(pid, &exit_status, WUNTRACED);
